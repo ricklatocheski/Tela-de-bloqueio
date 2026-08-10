@@ -237,6 +237,69 @@
       opacity: .35;
       z-index: 2;
     }
+
+    /* Notificação estilo WhatsApp */
+    .notif {
+      width: 100%;
+      max-width: 460px;
+      margin-top: 20px;
+      background: rgba(250,250,250,.84);
+      backdrop-filter: blur(20px) saturate(160%);
+      -webkit-backdrop-filter: blur(20px) saturate(160%);
+      border-radius: 20px;
+      padding: 11px 13px 13px;
+      color: #111;
+      box-shadow: 0 10px 30px rgba(0,0,0,.30);
+      animation: notifIn .55s cubic-bezier(.2,.8,.2,1) both;
+    }
+    @keyframes notifIn {
+      from { opacity: 0; transform: translateY(-16px) scale(.95); }
+      to   { opacity: 1; transform: none; }
+    }
+    .notif-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .notif-app {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #3a3a3a;
+      letter-spacing: .2px;
+    }
+    .wa-icon {
+      width: 19px; height: 19px;
+      border-radius: 5px;
+      background: #25D366;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.2);
+    }
+    .notif-time { font-size: 12.5px; color: #666; font-variant-numeric: tabular-nums; }
+    .notif-body { display: flex; align-items: center; gap: 11px; }
+    .notif-avatar {
+      width: 46px; height: 46px;
+      border-radius: 50%;
+      flex: 0 0 auto;
+      background: linear-gradient(135deg,#ffb3c9,#ff5c8a) center/cover no-repeat;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,.06);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      color: #fff;
+      overflow: hidden;
+    }
+    .notif-avatar:active { transform: scale(.94); }
+    .notif-text { min-width: 0; }
+    .notif-name {
+      font-size: 15px; font-weight: 700; color: #000; margin-bottom: 2px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .notif-msg { font-size: 14.5px; color: #1c1c1c; line-height: 1.25; }
   </style>
 </head>
 <body>
@@ -246,11 +309,26 @@
 
     <button id="photoBtn" title="Trocar foto" aria-label="Trocar foto">📷</button>
     <input type="file" id="fileInput" accept="image/*" />
+    <input type="file" id="avatarInput" accept="image/*" style="display:none" />
 
     <div id="content">
       <div class="top">
         <div id="clock">--:--</div>
         <div id="date">carregando…</div>
+      </div>
+
+      <div class="notif" id="notif">
+        <div class="notif-header">
+          <div class="notif-app"><span class="wa-icon">💬</span> WhatsApp</div>
+          <span class="notif-time" id="notifTime">agora</span>
+        </div>
+        <div class="notif-body">
+          <div class="notif-avatar" id="notifAvatar" title="Trocar foto dela">💕</div>
+          <div class="notif-text">
+            <div class="notif-name">amor da minha vida 💕</div>
+            <div class="notif-msg" id="notifMsg">Bom dia meu bem ☀️</div>
+          </div>
+        </div>
       </div>
 
       <div class="spacer"></div>
@@ -336,10 +414,25 @@
         totalDays + ' dias juntos • desde 01/02/2025';
     }
 
+    // ===== Notificação (saudação conforme a hora) =====
+    function greeting(now){
+      var h = now.getHours();
+      if (h >= 5 && h < 12)  return 'Bom dia meu bem ☀️';
+      if (h >= 12 && h < 18) return 'Boa tarde meu bem 🌤️';
+      return 'Boa noite meu bem 🌙';
+    }
+
+    function updateNotif(now){
+      document.getElementById('notifMsg').textContent = greeting(now);
+      document.getElementById('notifTime').textContent =
+        pad(now.getHours()) + ':' + pad(now.getMinutes());
+    }
+
     function tick(){
       var now = new Date();
       updateClock(now);
       updateLive(now);
+      updateNotif(now);
     }
 
     // ===== Foto de fundo =====
@@ -385,8 +478,45 @@
       reader.readAsDataURL(file);
     });
 
+    // ===== Foto dela (avatar da notificação) =====
+    var notifAvatar = document.getElementById('notifAvatar');
+
+    function applyAvatar(src){
+      notifAvatar.style.backgroundImage = "url('" + src + "')";
+      notifAvatar.textContent = '';
+    }
+
+    function loadAvatar(){
+      var saved = null;
+      try { saved = localStorage.getItem('gfPhoto'); } catch(e){}
+      if (saved) { applyAvatar(saved); return; }
+      // fallback: tenta um arquivo dela.jpg na mesma pasta
+      var img = new Image();
+      img.onload  = function(){ applyAvatar('dela.jpg'); };
+      img.onerror = function(){ /* mantém o 💕 no avatar */ };
+      img.src = 'dela.jpg';
+    }
+
+    notifAvatar.addEventListener('click', function(){
+      document.getElementById('avatarInput').click();
+    });
+
+    document.getElementById('avatarInput').addEventListener('change', function(e){
+      var file = e.target.files && e.target.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function(ev){
+        applyAvatar(ev.target.result);
+        try { localStorage.setItem('gfPhoto', ev.target.result); } catch(err){
+          alert('A foto dela é grande demais para salvar, mas está aplicada agora.');
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+
     // ===== Início =====
     loadPhoto();
+    loadAvatar();
     tick();
     setInterval(tick, 1000);
 
