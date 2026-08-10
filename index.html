@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#000000" />
+  <title>Erica &amp; Erick 💕</title>
+  <link rel="manifest" href="manifest.json" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    :root {
+      --accent: #ff5c8a;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    html, body {
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      background: #000;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      color: #fff;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    #app {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+    }
+
+    /* Foto de fundo */
+    #bg {
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      transition: background-image .4s ease;
+      z-index: 0;
+    }
+    /* Gradiente para dar contraste ao texto */
+    #overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      background:
+        linear-gradient(180deg,
+          rgba(0,0,0,.55) 0%,
+          rgba(0,0,0,.15) 22%,
+          rgba(0,0,0,.05) 45%,
+          rgba(0,0,0,.35) 72%,
+          rgba(0,0,0,.85) 100%);
+    }
+
+    #content {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: calc(var(--safe-top) + 26px) 20px calc(var(--safe-bottom) + 26px);
+    }
+
+    /* Topo: relógio grande */
+    .top {
+      text-align: center;
+      width: 100%;
+    }
+    #clock {
+      font-size: clamp(64px, 23vw, 128px);
+      font-weight: 300;
+      letter-spacing: -2px;
+      line-height: 1;
+      text-shadow: 0 2px 24px rgba(0,0,0,.45);
+      font-variant-numeric: tabular-nums;
+    }
+    #date {
+      margin-top: 8px;
+      font-size: clamp(15px, 4.4vw, 21px);
+      font-weight: 500;
+      opacity: .95;
+      text-transform: capitalize;
+      text-shadow: 0 1px 12px rgba(0,0,0,.5);
+    }
+
+    .spacer { flex: 1 1 auto; }
+
+    /* Nome do casal */
+    .couple {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-size: clamp(18px, 5.4vw, 26px);
+      font-weight: 600;
+      margin-bottom: 14px;
+      text-shadow: 0 1px 14px rgba(0,0,0,.6);
+      text-align: center;
+    }
+    .couple .heart {
+      color: var(--accent);
+      filter: drop-shadow(0 0 8px rgba(255,92,138,.6));
+      animation: beat 1.6s ease-in-out infinite;
+      font-size: .9em;
+    }
+    @keyframes beat {
+      0%, 100% { transform: scale(1); }
+      15% { transform: scale(1.25); }
+      30% { transform: scale(1); }
+      45% { transform: scale(1.18); }
+    }
+
+    /* Card do tempo juntos */
+    .card {
+      width: 100%;
+      max-width: 460px;
+      background: rgba(255,255,255,.10);
+      border: 1px solid rgba(255,255,255,.18);
+      border-radius: 22px;
+      backdrop-filter: blur(14px) saturate(140%);
+      -webkit-backdrop-filter: blur(14px) saturate(140%);
+      padding: 16px 14px 18px;
+      box-shadow: 0 8px 30px rgba(0,0,0,.35);
+    }
+    .card-title {
+      text-align: center;
+      font-size: 12.5px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      opacity: .85;
+      margin-bottom: 12px;
+      font-weight: 600;
+    }
+
+    /* Blocos ano / mês / dia */
+    .units {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .unit {
+      text-align: center;
+      background: rgba(0,0,0,.22);
+      border-radius: 14px;
+      padding: 10px 4px;
+    }
+    .unit .num {
+      font-size: clamp(24px, 7vw, 32px);
+      font-weight: 700;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+    .unit .lbl {
+      margin-top: 5px;
+      font-size: 11px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      opacity: .8;
+    }
+
+    /* Contador ao vivo */
+    .live {
+      text-align: center;
+      border-top: 1px solid rgba(255,255,255,.14);
+      padding-top: 12px;
+    }
+    .live .live-label {
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      opacity: .8;
+      margin-bottom: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .live .dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: #2ecc71;
+      box-shadow: 0 0 8px #2ecc71;
+      animation: blink 1s steps(1) infinite;
+    }
+    @keyframes blink { 50% { opacity: .25; } }
+    #liveCounter {
+      font-size: clamp(19px, 6vw, 26px);
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: .5px;
+      color: #fff;
+    }
+    #liveSeconds {
+      font-size: 13px;
+      opacity: .8;
+      margin-top: 4px;
+    }
+
+    /* Botão trocar foto */
+    #photoBtn {
+      position: absolute;
+      top: calc(var(--safe-top) + 14px);
+      right: 14px;
+      z-index: 3;
+      width: 42px; height: 42px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,.25);
+      background: rgba(0,0,0,.3);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      color: #fff;
+      font-size: 19px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      opacity: .55;
+      transition: opacity .2s;
+    }
+    #photoBtn:active { opacity: 1; transform: scale(.95); }
+    #fileInput { display: none; }
+
+    .hint {
+      position: absolute;
+      bottom: calc(var(--safe-bottom) + 6px);
+      left: 0; right: 0;
+      text-align: center;
+      font-size: 11px;
+      opacity: .35;
+      z-index: 2;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div id="bg"></div>
+    <div id="overlay"></div>
+
+    <button id="photoBtn" title="Trocar foto" aria-label="Trocar foto">📷</button>
+    <input type="file" id="fileInput" accept="image/*" />
+
+    <div id="content">
+      <div class="top">
+        <div id="clock">--:--</div>
+        <div id="date">carregando…</div>
+      </div>
+
+      <div class="spacer"></div>
+
+      <div class="couple">
+        <span>Erica Guarnieri</span>
+        <span class="heart">❤</span>
+        <span>Erick Latocheski</span>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Tempo de namoro</div>
+        <div class="units">
+          <div class="unit"><div class="num" id="uYears">0</div><div class="lbl">Anos</div></div>
+          <div class="unit"><div class="num" id="uMonths">0</div><div class="lbl">Meses</div></div>
+          <div class="unit"><div class="num" id="uDays">0</div><div class="lbl">Dias</div></div>
+        </div>
+        <div class="live">
+          <div class="live-label"><span class="dot"></span> Juntos há</div>
+          <div id="liveCounter">--</div>
+          <div id="liveSeconds">desde 01/02/2025</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hint">💕 desde 01/02/2025</div>
+  </div>
+
+  <script>
+    // ===== Configuração =====
+    var START_DATE = new Date(2025, 1, 1, 0, 0, 0); // 01/02/2025 (mês 1 = fevereiro)
+
+    var DIAS_SEMANA = ['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
+    var MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+
+    function pad(n){ return n < 10 ? '0' + n : '' + n; }
+
+    // ===== Relógio e data reais =====
+    function updateClock(now){
+      var h = pad(now.getHours());
+      var m = pad(now.getMinutes());
+      document.getElementById('clock').textContent = h + ':' + m;
+
+      var dia = DIAS_SEMANA[now.getDay()];
+      var texto = dia + ', ' + now.getDate() + ' de ' + MESES[now.getMonth()] + ' de ' + now.getFullYear();
+      document.getElementById('date').textContent = texto;
+    }
+
+    // ===== Diferença anos / meses / dias =====
+    function diffYMD(start, end){
+      var y = end.getFullYear() - start.getFullYear();
+      var m = end.getMonth() - start.getMonth();
+      var d = end.getDate() - start.getDate();
+      if (d < 0) {
+        m -= 1;
+        var prevMonth = new Date(end.getFullYear(), end.getMonth(), 0);
+        d += prevMonth.getDate();
+      }
+      if (m < 0) { y -= 1; m += 12; }
+      return { years: y, months: m, days: d };
+    }
+
+    // ===== Contador ao vivo (tempo total decorrido) =====
+    function updateLive(now){
+      var diff = diffYMD(START_DATE, now);
+      document.getElementById('uYears').textContent = diff.years;
+      document.getElementById('uMonths').textContent = diff.months;
+      document.getElementById('uDays').textContent = diff.days;
+
+      var ms = now - START_DATE;
+      if (ms < 0) ms = 0;
+      var totalSec = Math.floor(ms / 1000);
+      var days = Math.floor(totalSec / 86400);
+      var hrs  = Math.floor((totalSec % 86400) / 3600);
+      var mins = Math.floor((totalSec % 3600) / 60);
+      var secs = totalSec % 60;
+
+      document.getElementById('liveCounter').textContent =
+        days + 'd ' + pad(hrs) + ':' + pad(mins) + ':' + pad(secs);
+
+      var totalDays = days.toLocaleString('pt-BR');
+      document.getElementById('liveSeconds').textContent =
+        totalDays + ' dias juntos • desde 01/02/2025';
+    }
+
+    function tick(){
+      var now = new Date();
+      updateClock(now);
+      updateLive(now);
+    }
+
+    // ===== Foto de fundo =====
+    var bg = document.getElementById('bg');
+
+    function applyPhoto(src){
+      bg.style.backgroundImage = "url('" + src + "')";
+    }
+
+    function loadPhoto(){
+      var saved = null;
+      try { saved = localStorage.getItem('couplePhoto'); } catch(e){}
+      if (saved) {
+        applyPhoto(saved);
+        return;
+      }
+      // fallback: tenta um arquivo foto.jpg na mesma pasta
+      var img = new Image();
+      img.onload = function(){ applyPhoto('foto.jpg'); };
+      img.onerror = function(){
+        // sem foto: fundo degradê romântico
+        bg.style.background =
+          'radial-gradient(120% 120% at 30% 20%, #3a1c3f 0%, #1a1030 55%, #0a0812 100%)';
+      };
+      img.src = 'foto.jpg';
+    }
+
+    document.getElementById('photoBtn').addEventListener('click', function(){
+      document.getElementById('fileInput').click();
+    });
+
+    document.getElementById('fileInput').addEventListener('change', function(e){
+      var file = e.target.files && e.target.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function(ev){
+        var src = ev.target.result;
+        applyPhoto(src);
+        try { localStorage.setItem('couplePhoto', src); } catch(err){
+          alert('A foto é grande demais para salvar no aparelho, mas está aplicada agora.');
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // ===== Início =====
+    loadPhoto();
+    tick();
+    setInterval(tick, 1000);
+
+    // Mantém a tela acordada quando possível (opcional)
+    if ('wakeLock' in navigator) {
+      var wl = null;
+      async function requestWake(){
+        try { wl = await navigator.wakeLock.request('screen'); } catch(e){}
+      }
+      requestWake();
+      document.addEventListener('visibilitychange', function(){
+        if (document.visibilityState === 'visible') requestWake();
+      });
+    }
+  </script>
+</body>
+</html>

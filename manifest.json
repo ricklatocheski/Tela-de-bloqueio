@@ -1,0 +1,18 @@
+{
+  "name": "Erica & Erick 💕",
+  "short_name": "Erica & Erick",
+  "description": "Tela de bloqueio do casal Erica Guarnieri e Erick Latocheski",
+  "start_url": "index.html",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
