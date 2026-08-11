@@ -189,6 +189,70 @@
       .heart-fall { display: none; }
     }
 
+    /* Data especial (aniversários, dia dos namorados) */
+    .special {
+      margin-top: 8px; max-width: 90%;
+      font-size: 13.5px; font-weight: 600; color: #fff;
+      background: rgba(255,92,138,.28);
+      border: 1px solid rgba(255,255,255,.25);
+      border-radius: 999px; padding: 5px 14px;
+      text-shadow: 0 1px 8px rgba(0,0,0,.5);
+      animation: hintPulse 2.2s ease-in-out infinite;
+    }
+    .special.hidden { display: none; }
+    @keyframes hintPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
+
+    /* Motivo do dia */
+    .reason {
+      margin-top: 8px; max-width: 340px;
+      font-size: 12px; opacity: .82; line-height: 1.35;
+      text-shadow: 0 1px 8px rgba(0,0,0,.55);
+    }
+    .reason.hidden { display: none; }
+
+    /* Botão de bilhetinho */
+    #noteBtn {
+      position: absolute;
+      top: calc(var(--safe-top) + 14px);
+      left: 14px; z-index: 3;
+      width: 40px; height: 40px; border-radius: 50%;
+      border: 1px solid rgba(255,255,255,.25);
+      background: rgba(0,0,0,.28);
+      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+      color: #fff; font-size: 18px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; opacity: .55; transition: opacity .2s;
+    }
+    #noteBtn:active { opacity: 1; transform: scale(.95); }
+
+    /* Bilhetinho revelado */
+    #notePop {
+      position: absolute; z-index: 10;
+      top: 50%; left: 50%; transform: translate(-50%,-50%) scale(.9);
+      max-width: 82%; text-align: center;
+      background: rgba(20,10,20,.82);
+      border: 1px solid rgba(255,255,255,.22);
+      border-radius: 20px; padding: 18px 22px;
+      color: #fff; font-size: 16px; line-height: 1.4;
+      box-shadow: 0 16px 50px rgba(0,0,0,.5);
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      opacity: 0; transition: opacity .25s, transform .25s; pointer-events: none;
+    }
+    #notePop.show { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+    #notePop.hidden { display: none; }
+
+    /* Confete */
+    #confetti { position: absolute; inset: 0; z-index: 4; pointer-events: none; overflow: hidden; }
+    .confetti-piece {
+      position: absolute; top: -6%; width: 9px; height: 14px; border-radius: 2px;
+      will-change: transform, opacity; animation: confFall linear forwards;
+    }
+    @keyframes confFall {
+      0% { transform: translateY(-8vh) rotate(0deg); opacity: 0; }
+      12% { opacity: 1; }
+      100% { transform: translateY(112vh) rotate(720deg); opacity: .9; }
+    }
+
     /* "usar senha" (reserva) no rodapé */
     #usePin {
       margin-top: 10px;
@@ -258,15 +322,19 @@
     <div id="bg"></div>
     <div id="overlay"></div>
     <div id="hearts"></div>
+    <div id="confetti"></div>
 
     <button id="photoBtn" title="Trocar foto de fundo" aria-label="Trocar foto de fundo">📷</button>
+    <button id="noteBtn" title="Bilhetinho" aria-label="Bilhetinho">💌</button>
     <input type="file" id="fileInput" accept="image/*" style="display:none" />
     <input type="file" id="avatarInput" accept="image/*" style="display:none" />
+    <div id="notePop" class="hidden"></div>
 
     <div id="content">
       <div id="clock">--:--</div>
       <div id="date">carregando…</div>
       <div id="alarm" class="alarm hidden"><span class="al-ic">⏰</span><span id="alarmTime"></span></div>
+      <div id="special" class="special hidden"></div>
 
       <div class="notif" id="notif">
         <div class="notif-header">
@@ -314,6 +382,7 @@
       <div class="footer">
         <div class="names">Erica <span class="h">❤</span> Erick</div>
         <div class="count" id="count">juntos há 555 dias · desde 01/02/2025</div>
+        <div id="reason" class="reason hidden"></div>
         <div id="usePin">usar senha</div>
       </div>
     </div>
@@ -342,6 +411,14 @@
 
   <script>
     var START_DATE = new Date(2025, 1, 1, 0, 0, 0); // 01/02/2025
+
+    // Datas especiais (formato 'dd-mm'). Preencher ANIVERSÁRIO DELA / DELE:
+    var DATES = {
+      namoro:    '01-02',   // aniversário de namoro
+      ela:       '',        // <-- aniversário DELA (ex: '15-07')
+      ele:       '',        // <-- aniversário DELE (opcional)
+      namorados: '12-06'    // Dia dos Namorados (Brasil)
+    };
 
     var DIAS = ['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
     var MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
@@ -383,7 +460,47 @@
       'te amo mais que tudo nesse mundo 💗',
       'meu bem, você é tudo pra mim 🫶',
       'só de pensar em você eu sorrio 🥰',
-      'nunca te amei tão pouco quanto hoje, amanhã será mais ❤️'
+      'nunca te amei tão pouco quanto hoje, amanhã será mais ❤️',
+      'pensei em você agora 💭❤️',
+      'tô aqui pensando em você 💭',
+      'você acabou de passar pela minha cabeça 💭❤️'
+    ];
+
+    // Motivos pra te amar (mudam a cada dia)
+    var REASONS = [
+      'você tem o sorriso mais lindo do mundo 😍',
+      'você me entende como ninguém 🫶',
+      'do seu jeitinho de cuidar de mim 🥰',
+      'você me faz rir até quando eu tô mal 😄',
+      'seu abraço é meu lugar favorito 🤗',
+      'você acredita em mim sempre ❤️',
+      'do jeito que você fala "meu amor" 💕',
+      'você me faz querer ser melhor ✨',
+      'da paz que eu sinto do seu lado 🕊️',
+      'você é minha melhor companhia 💑',
+      'do seu cheirinho 🥹',
+      'você me manda bom dia todo dia ☀️',
+      'da forma que você me olha 👀❤️',
+      'você aguenta meus dias ruins comigo 💪',
+      'do nosso jeito bobo de ser feliz 🤪',
+      'você é minha casa 🏡❤️',
+      'da sua força e coragem 💗',
+      'você me escolhe todos os dias 💍',
+      'do carinho nos pequenos gestos 🫶',
+      'você faz tudo ficar mais leve 🎈'
+    ];
+
+    // Bilhetinhos escondidos
+    var NOTES = [
+      'Se você tá lendo isso, saiba que eu te amo demais ❤️',
+      'Você é a melhor parte dos meus dias 🥰',
+      'Obrigada por existir na minha vida 💕',
+      'Meu coração é todo seu 💗',
+      'Você é meu presente favorito 🎁❤️',
+      'Eu escolheria você de novo, sempre 💍',
+      'Tô sorrindo só de pensar em você 😊',
+      'Você me faz muito feliz, sabia? 🫶',
+      'Pra sempre é pouco perto do quanto eu te amo ❤️'
     ];
 
     function periodo(h){
@@ -393,13 +510,80 @@
       return 'dormir';
     }
 
-    var _period = null;
-    function refreshMsg(now){
-      var p = periodo(now.getHours());
-      if (p !== _period){
-        _period = p;
-        document.getElementById('notifMsg').textContent = rnd(FRASES[p]);
+    function ddmm(now){ return pad(now.getDate()) + '-' + pad(now.getMonth() + 1); }
+
+    function checkSpecial(now){
+      var t = ddmm(now);
+      if (DATES.namoro && t === DATES.namoro){
+        var y = now.getFullYear() - 2025;
+        return { id: 'namoro',
+          title: '🎉 Hoje é nosso aniversário de namoro! 💑',
+          msg: 'Feliz aniversário de namoro meu amor ❤️ ' + y + ' ano' + (y === 1 ? '' : 's') + ' de nós dois 🥹💕' };
       }
+      if (DATES.ela && t === DATES.ela){
+        return { id: 'ela', title: '🎂 Feliz aniversário, meu amor! 🎉',
+          msg: 'Parabéns meu amor 🎂❤️ que sua vida seja tão linda quanto você. Te amo infinito 🥰' };
+      }
+      if (DATES.ele && t === DATES.ele){
+        return { id: 'ele', title: '🎂 Feliz aniversário, meu amor! 🎉',
+          msg: 'Parabéns meu amor 🎂❤️ hoje é o seu dia. Te amo demais 🥰' };
+      }
+      if (DATES.namorados && t === DATES.namorados){
+        return { id: 'namorados', title: '💘 Feliz Dia dos Namorados! 💘',
+          msg: 'Feliz dia dos namorados meu amor ❤️ obrigada por ser meu pra sempre 💑' };
+      }
+      return null;
+    }
+
+    var _msgKey = null;
+    function refreshMsg(now){
+      var sp = checkSpecial(now);
+      var key = sp ? ('sp:' + sp.id) : periodo(now.getHours());
+      if (key !== _msgKey){
+        _msgKey = key;
+        document.getElementById('notifMsg').textContent = sp ? sp.msg : rnd(FRASES[periodo(now.getHours())]);
+      }
+    }
+
+    // Banner de data especial + confete
+    var _specialOn = false, _confTimer = null;
+    function startConfetti(){
+      if (_confTimer) return;
+      var layer = document.getElementById('confetti');
+      var cores = ['#ff5c8a','#ffd166','#06d6a0','#4d9dff','#c77dff','#ff9770','#ffffff'];
+      _confTimer = setInterval(function(){
+        var s = document.createElement('span');
+        s.className = 'confetti-piece';
+        s.style.left = Math.random() * 100 + 'vw';
+        s.style.background = cores[Math.floor(Math.random() * cores.length)];
+        var dur = 2.6 + Math.random() * 2.6;
+        s.style.animationDuration = dur + 's';
+        layer.appendChild(s);
+        setTimeout(function(){ s.remove(); }, dur * 1000 + 200);
+      }, 130);
+    }
+    function stopConfetti(){ if (_confTimer){ clearInterval(_confTimer); _confTimer = null; } }
+
+    function updateSpecialUI(now){
+      var sp = checkSpecial(now);
+      var el = document.getElementById('special');
+      if (sp && !_specialOn){
+        _specialOn = true; el.textContent = sp.title; el.classList.remove('hidden'); startConfetti();
+      } else if (!sp && _specialOn){
+        _specialOn = false; el.classList.add('hidden'); stopConfetti();
+      }
+    }
+
+    // Motivo do dia pra te amar
+    var _reasonDay = null;
+    function updateReason(now){
+      var days = Math.floor((now - START_DATE) / 86400000);
+      if (days === _reasonDay) return;
+      _reasonDay = days;
+      var n = ((days % REASONS.length) + REASONS.length) % REASONS.length;
+      var el = document.getElementById('reason');
+      el.textContent = 'Motivo nº ' + (days + 1) + ' pra te amar: ' + REASONS[n];
+      el.classList.remove('hidden');
     }
 
     function tick(){
@@ -410,6 +594,8 @@
         cap(DIAS[now.getDay()]) + ', ' + now.getDate() + ' de ' + MESES[now.getMonth()] + ' de ' + now.getFullYear();
 
       refreshMsg(now);
+      updateSpecialUI(now);
+      updateReason(now);
       document.getElementById('notifTime').textContent = pad(now.getHours()) + ':' + pad(now.getMinutes());
 
       var totalDays = Math.floor((now - START_DATE) / 86400000);
@@ -657,6 +843,28 @@
         setTimeout(function(){ show(); schedule(); }, delay);
       }
       schedule();
+    })();
+
+    // ===== Bilhetinhos escondidos =====
+    (function bilhetes(){
+      var btn = document.getElementById('noteBtn');
+      var pop = document.getElementById('notePop');
+      var hideT = null;
+      btn.addEventListener('click', function(){
+        pop.textContent = '💌 ' + rnd(NOTES);
+        pop.classList.remove('hidden');
+        void pop.offsetWidth;
+        pop.classList.add('show');
+        clearTimeout(hideT);
+        hideT = setTimeout(function(){
+          pop.classList.remove('show');
+          setTimeout(function(){ pop.classList.add('hidden'); }, 260);
+        }, 4200);
+      });
+      pop.addEventListener('click', function(){
+        pop.classList.remove('show');
+        setTimeout(function(){ pop.classList.add('hidden'); }, 260);
+      });
     })();
 
     // ===== Início =====
