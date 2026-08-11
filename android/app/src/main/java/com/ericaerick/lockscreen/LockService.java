@@ -55,7 +55,7 @@ public class LockService extends Service {
                     context.startActivity(lock);
                 } catch (Exception e) { /* ignora */ }
             }
-        }, 400);
+        }, 200);
     }
 
     private Notification buildNotification() {

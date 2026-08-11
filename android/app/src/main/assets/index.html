@@ -664,15 +664,7 @@
     loadAvatar();
     tick();
     setInterval(tick, 1000);
-
-    if ('wakeLock' in navigator) {
-      var wl = null;
-      async function reqWake(){ try { wl = await navigator.wakeLock.request('screen'); } catch(e){} }
-      reqWake();
-      document.addEventListener('visibilitychange', function(){
-        if (document.visibilityState === 'visible') reqWake();
-      });
-    }
+    // (Sem wakeLock: a tela deve apagar normalmente quando o usuário desligar)
   </script>
 </body>
 </html>
