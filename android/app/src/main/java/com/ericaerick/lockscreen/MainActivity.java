@@ -2,9 +2,13 @@ package com.ericaerick.lockscreen;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.hardware.biometrics.BiometricPrompt;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.CancellationSignal;
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.Settings;
 import android.view.View;
 import android.view.Window;
@@ -20,6 +24,8 @@ public class MainActivity extends Activity {
 
     private WebView web;
     private ValueCallback<Uri[]> filePathCallback;
+    private boolean biometricInProgress = false;
+    private CancellationSignal cancelSignal;
     private static final int FILE_REQUEST = 1001;
     private static final int OVERLAY_REQUEST = 1002;
 
@@ -70,6 +76,63 @@ public class MainActivity extends Activity {
                 @Override public void run() { doUnlock(); }
             });
         }
+        @JavascriptInterface
+        public void fingerprint() {
+            runOnUiThread(new Runnable() {
+                @Override public void run() { promptBiometric(); }
+            });
+        }
+    }
+
+    private void promptBiometric() {
+        if (Build.VERSION.SDK_INT < 28) {
+            // Sem API de digital: cai para a senha reserva
+            if (web != null) web.evaluateJavascript("window.showPin && window.showPin();", null);
+            return;
+        }
+        if (biometricInProgress) return;
+        biometricInProgress = true;
+        cancelSignal = new CancellationSignal();
+        try {
+            BiometricPrompt prompt = new BiometricPrompt.Builder(this)
+                    .setTitle("Erica e Erick 💕")
+                    .setDescription("Toque no sensor para desbloquear")
+                    .setNegativeButton("Usar senha", getMainExecutor(),
+                            new android.content.DialogInterface.OnClickListener() {
+                                @Override public void onClick(android.content.DialogInterface d, int w) {
+                                    biometricInProgress = false;
+                                    if (web != null) web.evaluateJavascript("window.showPin && window.showPin();", null);
+                                }
+                            })
+                    .build();
+            prompt.authenticate(cancelSignal, getMainExecutor(),
+                    new BiometricPrompt.AuthenticationCallback() {
+                        @Override
+                        public void onAuthenticationSucceeded(BiometricPrompt.AuthenticationResult result) {
+                            biometricInProgress = false;
+                            doUnlock();
+                        }
+                        @Override
+                        public void onAuthenticationError(int errorCode, CharSequence errString) {
+                            biometricInProgress = false;
+                        }
+                        @Override
+                        public void onAuthenticationFailed() {
+                            // dedo nao reconhecido: continua tentando
+                        }
+                    });
+        } catch (Exception e) {
+            biometricInProgress = false;
+            if (web != null) web.evaluateJavascript("window.showPin && window.showPin();", null);
+        }
+    }
+
+    private void cancelBiometric() {
+        if (cancelSignal != null) {
+            try { cancelSignal.cancel(); } catch (Exception e) { /* ignora */ }
+            cancelSignal = null;
+        }
+        biometricInProgress = false;
     }
 
     private void showOverLockScreen() {
@@ -94,6 +157,16 @@ public class MainActivity extends Activity {
         super.onNewIntent(intent);
         hideSystemUi();
         if (web != null) web.evaluateJavascript("window.resetLock && window.resetLock();", null);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        hideSystemUi();
+        // Ao aparecer a tela, pede a digital automaticamente (pequeno atraso p/ estabilizar)
+        new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+            @Override public void run() { promptBiometric(); }
+        }, 350);
     }
 
     @Override

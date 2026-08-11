@@ -252,7 +252,7 @@
       </div>
     </div>
 
-    <div id="lockHint"><span class="ic">🔒</span>deslize para cima</div>
+    <div id="lockHint"><span class="ic">👆</span>toque para desbloquear</div>
 
     <div id="pinLayer">
       <div class="pin-title">Digite a senha 💕</div>
@@ -400,6 +400,8 @@
 
       // Chamado pelo app ao reexibir a tela de bloqueio (reseta o teclado)
       window.resetLock = function(){ close(); };
+      // Chamado pelo app se a digital falhar/for cancelada (mostra a senha reserva)
+      window.showPin = function(){ open(); };
 
       function success(){
         if (window.AndroidLock && typeof window.AndroidLock.unlock === 'function'){
@@ -435,8 +437,14 @@
         }
       });
 
-      // Deslizar para cima (ou tocar na dica) abre o teclado
-      hint.addEventListener('click', open);
+      // Tocar na dica pede a digital (no app); no navegador abre o teclado
+      hint.addEventListener('click', function(){
+        if (window.AndroidLock && typeof window.AndroidLock.fingerprint === 'function') {
+          window.AndroidLock.fingerprint();
+        } else {
+          open();
+        }
+      });
       var startY = null;
       document.addEventListener('touchstart', function(e){
         if (layer.classList.contains('show')) return;
