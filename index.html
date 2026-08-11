@@ -174,24 +174,40 @@
       .heart-fall { display: none; }
     }
 
-    /* Dica de desbloqueio */
-    #lockHint {
-      position: absolute;
-      bottom: calc(var(--safe-bottom) + 40px);
-      left: 0; right: 0; text-align: center;
-      z-index: 5; color: #fff; opacity: .9;
-      text-shadow: 0 1px 10px rgba(0,0,0,.65);
-      font-size: 13px; letter-spacing: .3px;
-      animation: hintPulse 2.4s ease-in-out infinite;
-    }
-    #lockHint .ic { font-size: 22px; display: block; margin-bottom: 3px; }
-    @keyframes hintPulse { 0%,100%{opacity:.55; transform:translateY(0)} 50%{opacity:1; transform:translateY(-3px)} }
+    /* "usar senha" (reserva) no rodapé */
     #usePin {
-      position: absolute; bottom: calc(var(--safe-bottom) + 12px);
-      left: 0; right: 0; text-align: center; z-index: 5;
-      color: #fff; opacity: .65; font-size: 12px; text-decoration: underline;
+      margin-top: 10px;
+      color: #fff; opacity: .6; font-size: 12px; text-decoration: underline;
       text-shadow: 0 1px 8px rgba(0,0,0,.6); cursor: pointer;
     }
+
+    /* Player do Spotify */
+    .np {
+      width: 100%; max-width: 440px; margin-top: 14px;
+      display: flex; align-items: center; gap: 11px;
+      background: rgba(0,0,0,.32);
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 16px; padding: 9px 12px;
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      color: #fff;
+    }
+    .np.hidden { display: none; }
+    .np-art {
+      width: 44px; height: 44px; border-radius: 10px; flex: 0 0 auto;
+      background: linear-gradient(135deg,#1DB954,#0f7a37) center/cover no-repeat;
+      display: flex; align-items: center; justify-content: center; font-size: 20px;
+      overflow: hidden;
+    }
+    .np-info { flex: 1 1 auto; min-width: 0; }
+    .np-title { font-size: 13.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .np-artist { font-size: 12px; opacity: .8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .np-ctrl { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+    .np-btn {
+      width: 34px; height: 34px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; background: rgba(255,255,255,.12); cursor: pointer; user-select: none;
+    }
+    .np-btn:active { background: rgba(255,255,255,.28); }
 
     /* Teclado de senha */
     #pinLayer {
@@ -250,16 +266,27 @@
         </div>
       </div>
 
+      <div id="nowPlaying" class="np hidden">
+        <div class="np-art" id="npArt"><span class="np-note">🎵</span></div>
+        <div class="np-info">
+          <div class="np-title" id="npTitle">Nada tocando</div>
+          <div class="np-artist" id="npArtist">toque para conectar o Spotify</div>
+        </div>
+        <div class="np-ctrl">
+          <span class="np-btn" data-m="prev">⏮</span>
+          <span class="np-btn" id="npPlay" data-m="toggle">▶</span>
+          <span class="np-btn" data-m="next">⏭</span>
+        </div>
+      </div>
+
       <div class="spacer"></div>
 
       <div class="footer">
         <div class="names">Erica <span class="h">❤</span> Erick</div>
         <div class="count" id="count">juntos há 555 dias · desde 01/02/2025</div>
+        <div id="usePin">usar senha</div>
       </div>
     </div>
-
-    <div id="lockHint"><span class="ic">👆</span>toque para desbloquear</div>
-    <div id="usePin">usar senha</div>
 
     <div id="pinLayer">
       <div class="pin-title">Digite a senha 💕</div>
@@ -385,7 +412,6 @@
     // ===== Senha de desbloqueio =====
     (function pinLock(){
       var layer = document.getElementById('pinLayer');
-      var hint = document.getElementById('lockHint');
       var dots = layer.querySelectorAll('.pin-dots .d');
       var entry = '';
 
@@ -444,14 +470,6 @@
         }
       });
 
-      // Tocar na dica pede a digital (no app); no navegador abre o teclado
-      hint.addEventListener('click', function(){
-        if (window.AndroidLock && typeof window.AndroidLock.fingerprint === 'function') {
-          window.AndroidLock.fingerprint();
-        } else {
-          open();
-        }
-      });
       // "usar senha": abre o teclado (reserva)
       var usePin = document.getElementById('usePin');
       if (usePin) usePin.addEventListener('click', open);
@@ -475,6 +493,60 @@
         if (endY - sY2 > 90) close();
         sY2 = null;
       }, {passive:true});
+    })();
+
+    // ===== Player do Spotify (música tocando) =====
+    (function nowPlaying(){
+      var np = document.getElementById('nowPlaying');
+      var art = document.getElementById('npArt');
+      var title = document.getElementById('npTitle');
+      var artist = document.getElementById('npArtist');
+      var playBtn = document.getElementById('npPlay');
+      var lastArt = '';
+
+      // Recebe os dados vindos do app: {title, artist, art, playing, active, hasAccess}
+      window.setNowPlaying = function(data){
+        try { if (typeof data === 'string') data = JSON.parse(data); } catch(e){ return; }
+        if (!data) return;
+
+        if (data.hasAccess === false){
+          np.classList.remove('hidden');
+          title.textContent = 'Conectar o Spotify';
+          artist.textContent = 'toque aqui para ativar 🎵';
+          playBtn.textContent = '▶';
+          art.innerHTML = '<span class="np-note">🎵</span>'; lastArt='';
+          np.dataset.connect = '1';
+          return;
+        }
+        np.dataset.connect = '';
+
+        if (!data.active || !data.title){
+          np.classList.add('hidden');
+          return;
+        }
+        np.classList.remove('hidden');
+        title.textContent = data.title;
+        artist.textContent = data.artist || '';
+        playBtn.textContent = data.playing ? '⏸' : '▶';
+        if (data.art && data.art !== lastArt){
+          art.style.backgroundImage = "url('" + data.art + "')";
+          art.innerHTML = ''; lastArt = data.art;
+        } else if (!data.art && lastArt){
+          art.style.backgroundImage = ''; art.innerHTML = '<span class="np-note">🎵</span>'; lastArt='';
+        }
+      };
+
+      np.addEventListener('click', function(e){
+        // Se ainda não tem acesso, o toque abre a permissão
+        if (np.dataset.connect === '1'){
+          if (window.AndroidLock && window.AndroidLock.connectMedia) window.AndroidLock.connectMedia();
+          return;
+        }
+        var m = e.target.getAttribute('data-m');
+        if (m && window.AndroidLock && window.AndroidLock.media){
+          window.AndroidLock.media(m);
+        }
+      });
     })();
 
     // ===== Início =====
