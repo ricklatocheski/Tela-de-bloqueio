@@ -186,6 +186,12 @@
     }
     #lockHint .ic { font-size: 22px; display: block; margin-bottom: 3px; }
     @keyframes hintPulse { 0%,100%{opacity:.55; transform:translateY(0)} 50%{opacity:1; transform:translateY(-3px)} }
+    #usePin {
+      position: absolute; bottom: calc(var(--safe-bottom) + 12px);
+      left: 0; right: 0; text-align: center; z-index: 5;
+      color: #fff; opacity: .65; font-size: 12px; text-decoration: underline;
+      text-shadow: 0 1px 8px rgba(0,0,0,.6); cursor: pointer;
+    }
 
     /* Teclado de senha */
     #pinLayer {
@@ -253,6 +259,7 @@
     </div>
 
     <div id="lockHint"><span class="ic">👆</span>toque para desbloquear</div>
+    <div id="usePin">usar senha</div>
 
     <div id="pinLayer">
       <div class="pin-title">Digite a senha 💕</div>
@@ -445,6 +452,9 @@
           open();
         }
       });
+      // "usar senha": abre o teclado (reserva)
+      var usePin = document.getElementById('usePin');
+      if (usePin) usePin.addEventListener('click', open);
       var startY = null;
       document.addEventListener('touchstart', function(e){
         if (layer.classList.contains('show')) return;

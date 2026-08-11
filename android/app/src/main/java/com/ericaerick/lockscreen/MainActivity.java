@@ -2,7 +2,7 @@ package com.ericaerick.lockscreen;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.hardware.biometrics.BiometricPrompt;
+import android.hardware.fingerprint.FingerprintManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -84,9 +84,19 @@ public class MainActivity extends Activity {
         }
     }
 
+    @SuppressWarnings("deprecation")
     private void promptBiometric() {
-        if (Build.VERSION.SDK_INT < 28) {
-            // Sem API de digital: cai para a senha reserva
+        if (Build.VERSION.SDK_INT < 23) {
+            if (web != null) web.evaluateJavascript("window.showPin && window.showPin();", null);
+            return;
+        }
+        FingerprintManager fm;
+        try {
+            fm = (FingerprintManager) getSystemService(FINGERPRINT_SERVICE);
+        } catch (Exception e) { fm = null; }
+
+        if (fm == null || !fm.isHardwareDetected() || !fm.hasEnrolledFingerprints()) {
+            // Sem digital cadastrada: usa a senha reserva
             if (web != null) web.evaluateJavascript("window.showPin && window.showPin();", null);
             return;
         }
@@ -94,33 +104,24 @@ public class MainActivity extends Activity {
         biometricInProgress = true;
         cancelSignal = new CancellationSignal();
         try {
-            BiometricPrompt prompt = new BiometricPrompt.Builder(this)
-                    .setTitle("Erica e Erick 💕")
-                    .setDescription("Toque no sensor para desbloquear")
-                    .setNegativeButton("Usar senha", getMainExecutor(),
-                            new android.content.DialogInterface.OnClickListener() {
-                                @Override public void onClick(android.content.DialogInterface d, int w) {
-                                    biometricInProgress = false;
-                                    if (web != null) web.evaluateJavascript("window.showPin && window.showPin();", null);
-                                }
-                            })
-                    .build();
-            prompt.authenticate(cancelSignal, getMainExecutor(),
-                    new BiometricPrompt.AuthenticationCallback() {
+            // Leitura SILENCIOSA da digital: sem janela do sistema por cima da tela
+            fm.authenticate(null, cancelSignal, 0,
+                    new FingerprintManager.AuthenticationCallback() {
                         @Override
-                        public void onAuthenticationSucceeded(BiometricPrompt.AuthenticationResult result) {
+                        public void onAuthenticationSucceeded(FingerprintManager.AuthenticationResult result) {
                             biometricInProgress = false;
                             doUnlock();
                         }
                         @Override
                         public void onAuthenticationError(int errorCode, CharSequence errString) {
+                            // lockout ou cancelado: usuario pode usar a senha
                             biometricInProgress = false;
                         }
                         @Override
                         public void onAuthenticationFailed() {
-                            // dedo nao reconhecido: continua tentando
+                            // dedo nao reconhecido: continua escutando
                         }
-                    });
+                    }, null);
         } catch (Exception e) {
             biometricInProgress = false;
             if (web != null) web.evaluateJavascript("window.showPin && window.showPin();", null);
@@ -163,10 +164,16 @@ public class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         hideSystemUi();
-        // Ao aparecer a tela, pede a digital automaticamente (pequeno atraso p/ estabilizar)
+        // Ao aparecer a tela, comeca a escutar a digital (silenciosa)
         new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
             @Override public void run() { promptBiometric(); }
-        }, 350);
+        }, 150);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        cancelBiometric();
     }
 
     @Override
