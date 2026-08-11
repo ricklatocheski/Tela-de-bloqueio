@@ -398,6 +398,9 @@
       function open(){ layer.classList.add('show'); entry=''; render(); }
       function close(){ layer.classList.remove('show'); entry=''; render(); }
 
+      // Chamado pelo app ao reexibir a tela de bloqueio (reseta o teclado)
+      window.resetLock = function(){ close(); };
+
       function success(){
         if (window.AndroidLock && typeof window.AndroidLock.unlock === 'function'){
           window.AndroidLock.unlock();   // no app: sai da tela de bloqueio

@@ -84,8 +84,16 @@ public class MainActivity extends Activity {
     }
 
     private void doUnlock() {
-        if (Build.VERSION.SDK_INT >= 27) setShowWhenLocked(false);
-        finish();
+        // Reseta o teclado e manda para segundo plano (mantem na memoria = reabre instantaneo)
+        if (web != null) web.evaluateJavascript("window.resetLock && window.resetLock();", null);
+        moveTaskToBack(true);
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        hideSystemUi();
+        if (web != null) web.evaluateJavascript("window.resetLock && window.resetLock();", null);
     }
 
     @Override
