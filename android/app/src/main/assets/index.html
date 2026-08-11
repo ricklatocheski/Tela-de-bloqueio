@@ -83,6 +83,15 @@
       opacity: .92;
       text-shadow: 0 1px 12px rgba(0,0,0,.55);
     }
+    .alarm {
+      margin-top: 8px;
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 13.5px; font-weight: 500; opacity: .85;
+      font-variant-numeric: tabular-nums;
+      text-shadow: 0 1px 10px rgba(0,0,0,.5);
+    }
+    .alarm.hidden { display: none; }
+    .alarm .al-ic { font-size: 13px; }
 
     /* Notificação estilo WhatsApp */
     .notif {
@@ -257,6 +266,7 @@
     <div id="content">
       <div id="clock">--:--</div>
       <div id="date">carregando…</div>
+      <div id="alarm" class="alarm hidden"><span class="al-ic">⏰</span><span id="alarmTime"></span></div>
 
       <div class="notif" id="notif">
         <div class="notif-header">
@@ -619,6 +629,15 @@
         }
       });
     })();
+
+    // ===== Próximo alarme (vindo do app) =====
+    window.setAlarm = function(t){
+      var el = document.getElementById('alarm');
+      var tt = document.getElementById('alarmTime');
+      if (!el || !tt) return;
+      if (t && t.length){ tt.textContent = t; el.classList.remove('hidden'); }
+      else { el.classList.add('hidden'); }
+    };
 
     // ===== Notificação aleatória dela (sem poluir) =====
     (function randomNotif(){

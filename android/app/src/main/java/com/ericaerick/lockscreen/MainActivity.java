@@ -1,6 +1,7 @@
 package com.ericaerick.lockscreen;
 
 import android.app.Activity;
+import android.app.AlarmManager;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -62,7 +63,14 @@ public class MainActivity extends Activity {
         s.setAllowFileAccess(true);
         s.setMediaPlaybackRequiresUserGesture(false);
         web.setBackgroundColor(0xFF000000);
-        web.setWebViewClient(new WebViewClient());
+        web.setWebViewClient(new WebViewClient() {
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+                updateAlarm();
+                refreshMedia();
+            }
+        });
         web.setWebChromeClient(new WebChromeClient() {
             @Override
             public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> callback,
@@ -112,6 +120,35 @@ public class MainActivity extends Activity {
             runOnUiThread(new Runnable() {
                 @Override public void run() { openNotificationAccess(); }
             });
+        }
+    }
+
+    // ===== Próximo alarme =====
+    private void updateAlarm() {
+        String text = "";
+        try {
+            if (Build.VERSION.SDK_INT >= 21) {
+                AlarmManager am = (AlarmManager) getSystemService(ALARM_SERVICE);
+                AlarmManager.AlarmClockInfo info = (am != null) ? am.getNextAlarmClock() : null;
+                if (info != null) {
+                    java.util.Calendar c = java.util.Calendar.getInstance();
+                    c.setTimeInMillis(info.getTriggerTime());
+                    int h = c.get(java.util.Calendar.HOUR_OF_DAY);
+                    int m = c.get(java.util.Calendar.MINUTE);
+                    String hhmm = (h < 10 ? "0" : "") + h + ":" + (m < 10 ? "0" : "") + m;
+
+                    java.util.Calendar now = java.util.Calendar.getInstance();
+                    boolean sameDay = c.get(java.util.Calendar.YEAR) == now.get(java.util.Calendar.YEAR)
+                            && c.get(java.util.Calendar.DAY_OF_YEAR) == now.get(java.util.Calendar.DAY_OF_YEAR);
+                    String[] dias = {"dom", "seg", "ter", "qua", "qui", "sex", "sáb"};
+                    text = sameDay ? hhmm : (dias[c.get(java.util.Calendar.DAY_OF_WEEK) - 1] + " " + hhmm);
+                }
+            }
+        } catch (Exception e) { text = ""; }
+
+        if (web != null) {
+            final String esc = text.replace("\\", "\\\\").replace("'", "\\'");
+            web.evaluateJavascript("window.setAlarm && window.setAlarm('" + esc + "');", null);
         }
     }
 
@@ -359,6 +396,8 @@ public class MainActivity extends Activity {
         }, 150);
         // E começa a acompanhar a música tocando
         startMedia();
+        // Atualiza o próximo alarme
+        updateAlarm();
     }
 
     @Override
