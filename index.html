@@ -63,23 +63,24 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: calc(var(--safe-top) + 32px) 22px calc(var(--safe-bottom) + 20px);
+      padding: calc(var(--safe-top) + 9vh) 22px calc(var(--safe-bottom) + 20px);
     }
 
     /* Relógio + data */
     #clock {
-      font-size: clamp(66px, 22vw, 120px);
-      font-weight: 200;
-      letter-spacing: -2px;
-      line-height: 1;
+      font-size: clamp(58px, 19vw, 104px);
+      font-weight: 300;
+      letter-spacing: -1px;
+      line-height: 1.02;
       text-shadow: 0 2px 22px rgba(0,0,0,.45);
       font-variant-numeric: tabular-nums;
     }
     #date {
-      margin-top: 6px;
-      font-size: clamp(14px, 4.2vw, 19px);
-      font-weight: 500;
-      opacity: .95;
+      margin-top: 10px;
+      font-size: clamp(14px, 4vw, 18px);
+      font-weight: 400;
+      letter-spacing: .2px;
+      opacity: .92;
       text-shadow: 0 1px 12px rgba(0,0,0,.55);
     }
 
@@ -87,26 +88,31 @@
     .notif {
       width: 100%;
       max-width: 440px;
-      margin-top: 26px;
-      background: rgba(250,250,250,.86);
-      backdrop-filter: blur(20px) saturate(160%);
-      -webkit-backdrop-filter: blur(20px) saturate(160%);
+      margin-top: 24px;
+      background: rgba(0,0,0,.34);
+      border: 1px solid rgba(255,255,255,.14);
+      backdrop-filter: blur(16px) saturate(140%);
+      -webkit-backdrop-filter: blur(16px) saturate(140%);
       border-radius: 20px;
       padding: 11px 13px 13px;
-      color: #111;
+      color: #fff;
       box-shadow: 0 10px 30px rgba(0,0,0,.28);
     }
+    .notif.hidden { display: none; }
+    #notif2 { margin-top: 10px; }
+    .notif.show-pop { animation: notifIn .5s cubic-bezier(.2,.8,.2,1) both; }
+    @keyframes notifIn { from{opacity:0; transform:translateY(-12px) scale(.97);} to{opacity:1; transform:none;} }
     .notif-header {
       display: flex; align-items: center; justify-content: space-between;
       margin-bottom: 8px;
     }
-    .notif-app { display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: #3a3a3a; }
+    .notif-app { display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: #eaeaea; }
     .wa-icon {
       width: 19px; height: 19px; border-radius: 5px; background: #25D366;
       display: flex; align-items: center; justify-content: center; font-size: 11px;
       box-shadow: 0 1px 3px rgba(0,0,0,.2);
     }
-    .notif-time { font-size: 12.5px; color: #666; font-variant-numeric: tabular-nums; }
+    .notif-time { font-size: 12.5px; color: rgba(255,255,255,.7); font-variant-numeric: tabular-nums; }
     .notif-body { display: flex; align-items: center; gap: 11px; }
     .notif-avatar {
       width: 46px; height: 46px; border-radius: 50%; flex: 0 0 auto;
@@ -118,10 +124,10 @@
     .notif-avatar:active { transform: scale(.94); }
     .notif-text { min-width: 0; }
     .notif-name {
-      font-size: 15px; font-weight: 700; color: #000; margin-bottom: 2px;
+      font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 2px;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    .notif-msg { font-size: 14.5px; color: #1c1c1c; line-height: 1.25; }
+    .notif-msg { font-size: 14.5px; color: rgba(255,255,255,.92); line-height: 1.3; }
 
     .spacer { flex: 1 1 auto; }
 
@@ -261,7 +267,21 @@
           <div class="notif-avatar" id="notifAvatar" title="Trocar foto dela">💕</div>
           <div class="notif-text">
             <div class="notif-name">my Princess 💕</div>
-            <div class="notif-msg" id="notifMsg">Bom dia meu bem ☀️</div>
+            <div class="notif-msg" id="notifMsg">Bom dia meu amor ❤️</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="notif hidden" id="notif2">
+        <div class="notif-header">
+          <div class="notif-app"><span class="wa-icon">💬</span> WhatsApp</div>
+          <span class="notif-time" id="notif2Time">agora</span>
+        </div>
+        <div class="notif-body">
+          <div class="notif-avatar" id="notif2Avatar">💕</div>
+          <div class="notif-text">
+            <div class="notif-name">my Princess 💕</div>
+            <div class="notif-msg" id="notif2Msg">amor, eu te amo muito ❤️</div>
           </div>
         </div>
       </div>
@@ -318,11 +338,58 @@
     function pad(n){ return n < 10 ? '0' + n : '' + n; }
     function cap(s){ return s.charAt(0).toUpperCase() + s.slice(1); }
 
-    function greeting(now){
-      var h = now.getHours();
-      if (h >= 5 && h < 12)  return 'Bom dia meu bem ☀️';
-      if (h >= 12 && h < 18) return 'Boa tarde meu bem 🌤️';
-      return 'Boa noite meu bem 🌙';
+    function rnd(arr){ return arr[Math.floor(Math.random() * arr.length)]; }
+
+    // Frases fofas por período do dia
+    var FRASES = {
+      manha: [
+        'Bom dia meu amor ❤️ acorda que hoje o dia é nosso ☀️',
+        'Bom dia meu amor ❤️ sonhei com você a noite toda 🥰',
+        'Bom dia meu amor ❤️ você é meu pensamento favorito 💭',
+        'Bom dia meu amor ❤️ te amo mais que ontem 💕'
+      ],
+      tarde: [
+        'Boa tarde meu amor ❤️ tô morrendo de saudade 🥺',
+        'Boa tarde meu amor ❤️ pensando em você o dia todo 💗',
+        'Boa tarde meu amor ❤️ mal posso esperar pra te ver 🫶',
+        'Boa tarde meu amor ❤️ você deixa meu dia mais lindo ✨'
+      ],
+      noite: [
+        'Boa noite meu amor ❤️ você é o melhor de todos os dias 🌙',
+        'Boa noite meu amor ❤️ te amo demais, sabia? 💞',
+        'Boa noite meu amor ❤️ queria estar aí do seu ladinho 🥰',
+        'Boa noite meu amor ❤️ obrigada por existir na minha vida 💗'
+      ],
+      dormir: [
+        'Boa noite, vou dormir 😴 te amo muito ❤️ bjss',
+        'Vou dormir amor 🌙 sonha comigo, te amo muito ❤️ bjss'
+      ]
+    };
+    // Frases da notificação aleatória
+    var TEAMO = [
+      'amor, eu te amo muito ❤️',
+      'tô com saudade de você 🥺❤️',
+      'você é o amor da minha vida 💕',
+      'te amo mais que tudo nesse mundo 💗',
+      'meu bem, você é tudo pra mim 🫶',
+      'só de pensar em você eu sorrio 🥰',
+      'nunca te amei tão pouco quanto hoje, amanhã será mais ❤️'
+    ];
+
+    function periodo(h){
+      if (h >= 5 && h < 12)  return 'manha';
+      if (h >= 12 && h < 18) return 'tarde';
+      if (h >= 18 && h < 23) return 'noite';
+      return 'dormir';
+    }
+
+    var _period = null;
+    function refreshMsg(now){
+      var p = periodo(now.getHours());
+      if (p !== _period){
+        _period = p;
+        document.getElementById('notifMsg').textContent = rnd(FRASES[p]);
+      }
     }
 
     function tick(){
@@ -332,7 +399,7 @@
       document.getElementById('date').textContent =
         cap(DIAS[now.getDay()]) + ', ' + now.getDate() + ' de ' + MESES[now.getMonth()] + ' de ' + now.getFullYear();
 
-      document.getElementById('notifMsg').textContent = greeting(now);
+      refreshMsg(now);
       document.getElementById('notifTime').textContent = pad(now.getHours()) + ':' + pad(now.getMinutes());
 
       var totalDays = Math.floor((now - START_DATE) / 86400000);
@@ -369,7 +436,11 @@
 
     // ===== Foto dela (avatar) =====
     var notifAvatar = document.getElementById('notifAvatar');
-    function applyAvatar(src){ notifAvatar.style.backgroundImage = "url('" + src + "')"; notifAvatar.textContent = ''; }
+    function applyAvatar(src){
+      notifAvatar.style.backgroundImage = "url('" + src + "')"; notifAvatar.textContent = '';
+      var a2 = document.getElementById('notif2Avatar');
+      if (a2){ a2.style.backgroundImage = "url('" + src + "')"; a2.textContent = ''; }
+    }
     function loadAvatar(){
       var saved = null;
       try { saved = localStorage.getItem('gfPhoto'); } catch(e){}
@@ -547,6 +618,26 @@
           window.AndroidLock.media(m);
         }
       });
+    })();
+
+    // ===== Notificação aleatória dela (sem poluir) =====
+    (function randomNotif(){
+      var n2 = document.getElementById('notif2');
+      var hideT = null;
+      function show(){
+        var now = new Date();
+        document.getElementById('notif2Time').textContent = pad(now.getHours()) + ':' + pad(now.getMinutes());
+        document.getElementById('notif2Msg').textContent = rnd(TEAMO);
+        n2.classList.remove('hidden');
+        n2.classList.remove('show-pop'); void n2.offsetWidth; n2.classList.add('show-pop');
+        clearTimeout(hideT);
+        hideT = setTimeout(function(){ n2.classList.add('hidden'); }, 13000); // some após ~13s
+      }
+      function schedule(){
+        var delay = 70000 + Math.random() * 110000; // aparece a cada ~1 a 3 min
+        setTimeout(function(){ show(); schedule(); }, delay);
+      }
+      schedule();
     })();
 
     // ===== Início =====
