@@ -9,7 +9,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Build;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 
 public class LockService extends Service {
 
@@ -37,14 +39,23 @@ public class LockService extends Service {
         registerReceiver(screenReceiver, filter);
     }
 
-    private void showLock(Context context) {
-        try {
-            Intent lock = new Intent(context, MainActivity.class);
-            lock.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
-                    | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
-                    | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            context.startActivity(lock);
-        } catch (Exception e) { /* ignora */ }
+    private final Handler handler = new Handler(Looper.getMainLooper());
+
+    private void showLock(final Context context) {
+        // Pequeno atraso para dar tempo do alarme/chamada aparecer, e então checar
+        handler.postDelayed(new Runnable() {
+            @Override public void run() {
+                // Se tiver alarme tocando ou chamada, NÃO mostra a tela do casal
+                if (MediaNotificationListener.isAlarmOrCallActive()) return;
+                try {
+                    Intent lock = new Intent(context, MainActivity.class);
+                    lock.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                            | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+                            | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                    context.startActivity(lock);
+                } catch (Exception e) { /* ignora */ }
+            }
+        }, 400);
     }
 
     private Notification buildNotification() {
