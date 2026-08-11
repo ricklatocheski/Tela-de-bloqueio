@@ -6,11 +6,10 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
-import android.view.GestureDetector;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.webkit.JavascriptInterface;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
@@ -21,7 +20,6 @@ public class MainActivity extends Activity {
 
     private WebView web;
     private ValueCallback<Uri[]> filePathCallback;
-    private GestureDetector gesture;
     private static final int FILE_REQUEST = 1001;
     private static final int OVERLAY_REQUEST = 1002;
 
@@ -54,23 +52,24 @@ public class MainActivity extends Activity {
                 return true;
             }
         });
+
+        // Ponte: a senha correta (no HTML) chama AndroidLock.unlock()
+        web.addJavascriptInterface(new WebAppInterface(), "AndroidLock");
+
         setContentView(web);
         hideSystemUi();
         web.loadUrl("file:///android_asset/index.html");
 
-        // Deslizar para cima = desbloquear (sai da nossa tela e vai para o telefone)
-        gesture = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener() {
-            @Override
-            public boolean onFling(MotionEvent e1, MotionEvent e2, float vx, float vy) {
-                if (e1 != null && e2 != null && (e1.getY() - e2.getY()) > 180 && Math.abs(vy) > 700) {
-                    unlock();
-                    return true;
-                }
-                return false;
-            }
-        });
-
         ensureOverlayAndService();
+    }
+
+    public class WebAppInterface {
+        @JavascriptInterface
+        public void unlock() {
+            runOnUiThread(new Runnable() {
+                @Override public void run() { doUnlock(); }
+            });
+        }
     }
 
     private void showOverLockScreen() {
@@ -84,21 +83,14 @@ public class MainActivity extends Activity {
         }
     }
 
-    @Override
-    public boolean dispatchTouchEvent(MotionEvent ev) {
-        if (gesture != null) gesture.onTouchEvent(ev);
-        return super.dispatchTouchEvent(ev);
-    }
-
-    private void unlock() {
+    private void doUnlock() {
         if (Build.VERSION.SDK_INT >= 27) setShowWhenLocked(false);
         finish();
     }
 
     @Override
     public void onBackPressed() {
-        // Botao voltar tambem desbloqueia (garantia de saida)
-        unlock();
+        // Nao desbloqueia pelo botao voltar: so pela senha.
     }
 
     private void ensureOverlayAndService() {

@@ -173,6 +173,47 @@
     @media (prefers-reduced-motion: reduce) {
       .heart-fall { display: none; }
     }
+
+    /* Dica de desbloqueio */
+    #lockHint {
+      position: absolute;
+      bottom: calc(var(--safe-bottom) + 40px);
+      left: 0; right: 0; text-align: center;
+      z-index: 5; color: #fff; opacity: .9;
+      text-shadow: 0 1px 10px rgba(0,0,0,.65);
+      font-size: 13px; letter-spacing: .3px;
+      animation: hintPulse 2.4s ease-in-out infinite;
+    }
+    #lockHint .ic { font-size: 22px; display: block; margin-bottom: 3px; }
+    @keyframes hintPulse { 0%,100%{opacity:.55; transform:translateY(0)} 50%{opacity:1; transform:translateY(-3px)} }
+
+    /* Teclado de senha */
+    #pinLayer {
+      position: absolute; inset: 0; z-index: 9;
+      background: rgba(0,0,0,.5);
+      backdrop-filter: blur(16px) saturate(140%);
+      -webkit-backdrop-filter: blur(16px) saturate(140%);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 24px; padding: 20px;
+      transform: translateY(100%); transition: transform .32s cubic-bezier(.2,.8,.2,1);
+    }
+    #pinLayer.show { transform: none; }
+    .pin-title { color: #fff; font-size: 16px; opacity: .95; text-shadow: 0 1px 8px rgba(0,0,0,.6); }
+    .pin-dots { display: flex; gap: 16px; }
+    .pin-dots .d { width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(255,255,255,.85); transition: background .15s; }
+    .pin-dots .d.on { background: #fff; }
+    #pinLayer.err .pin-dots { animation: shake .38s; }
+    @keyframes shake { 20%{transform:translateX(-9px)} 40%{transform:translateX(9px)} 60%{transform:translateX(-6px)} 80%{transform:translateX(6px)} }
+    .pin-pad { display: grid; grid-template-columns: repeat(3, 72px); gap: 16px; }
+    .key {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.20);
+      color: #fff; font-size: 27px; font-weight: 300;
+      display: flex; align-items: center; justify-content: center; cursor: pointer;
+      user-select: none;
+    }
+    .key:active { background: rgba(255,255,255,.32); transform: scale(.96); }
+    .key.fn { font-size: 13px; letter-spacing: .3px; background: transparent; border-color: transparent; }
   </style>
 </head>
 <body>
@@ -208,6 +249,29 @@
       <div class="footer">
         <div class="names">Erica <span class="h">❤</span> Erick</div>
         <div class="count" id="count">juntos há 555 dias · desde 01/02/2025</div>
+      </div>
+    </div>
+
+    <div id="lockHint"><span class="ic">🔒</span>deslize para cima</div>
+
+    <div id="pinLayer">
+      <div class="pin-title">Digite a senha 💕</div>
+      <div class="pin-dots">
+        <span class="d"></span><span class="d"></span><span class="d"></span><span class="d"></span>
+      </div>
+      <div class="pin-pad">
+        <div class="key" data-k="1">1</div>
+        <div class="key" data-k="2">2</div>
+        <div class="key" data-k="3">3</div>
+        <div class="key" data-k="4">4</div>
+        <div class="key" data-k="5">5</div>
+        <div class="key" data-k="6">6</div>
+        <div class="key" data-k="7">7</div>
+        <div class="key" data-k="8">8</div>
+        <div class="key" data-k="9">9</div>
+        <div class="key fn" data-k="chg">senha</div>
+        <div class="key" data-k="0">0</div>
+        <div class="key fn" data-k="del">⌫</div>
       </div>
     </div>
   </div>
@@ -309,6 +373,87 @@
       }
       setInterval(spawn, 3200);                    // 1 coração a cada ~3s
       spawn();
+    })();
+
+    // ===== Senha de desbloqueio =====
+    (function pinLock(){
+      var layer = document.getElementById('pinLayer');
+      var hint = document.getElementById('lockHint');
+      var dots = layer.querySelectorAll('.pin-dots .d');
+      var entry = '';
+
+      function getPin(){
+        var p = null;
+        try { p = localStorage.getItem('pin'); } catch(e){}
+        return (p && p.length === 4) ? p : '0102'; // senha padrão: 0102
+      }
+      function setPin(p){ try { localStorage.setItem('pin', p); } catch(e){} }
+
+      function render(){
+        for (var i = 0; i < dots.length; i++){
+          if (i < entry.length) dots[i].classList.add('on');
+          else dots[i].classList.remove('on');
+        }
+      }
+      function open(){ layer.classList.add('show'); entry=''; render(); }
+      function close(){ layer.classList.remove('show'); entry=''; render(); }
+
+      function success(){
+        if (window.AndroidLock && typeof window.AndroidLock.unlock === 'function'){
+          window.AndroidLock.unlock();   // no app: sai da tela de bloqueio
+        } else {
+          close();                        // no navegador: apenas fecha o teclado
+        }
+      }
+      function fail(){
+        layer.classList.add('err');
+        setTimeout(function(){ layer.classList.remove('err'); entry=''; render(); }, 420);
+      }
+
+      layer.addEventListener('click', function(e){
+        var k = e.target.getAttribute('data-k');
+        if (!k) return;
+        if (k === 'del'){ entry = entry.slice(0, -1); render(); return; }
+        if (k === 'chg'){
+          var atual = prompt('Senha atual (4 dígitos):');
+          if (atual === getPin()){
+            var nova = prompt('Nova senha (4 dígitos):');
+            if (nova && /^\d{4}$/.test(nova)){ setPin(nova); alert('Senha alterada! 💕'); }
+            else alert('A senha precisa ter 4 números.');
+          } else if (atual !== null){ alert('Senha atual incorreta.'); }
+          return;
+        }
+        if (/^[0-9]$/.test(k) && entry.length < 4){
+          entry += k; render();
+          if (entry.length === 4){
+            if (entry === getPin()) setTimeout(success, 120);
+            else setTimeout(fail, 120);
+          }
+        }
+      });
+
+      // Deslizar para cima (ou tocar na dica) abre o teclado
+      hint.addEventListener('click', open);
+      var startY = null;
+      document.addEventListener('touchstart', function(e){
+        if (layer.classList.contains('show')) return;
+        startY = e.touches[0].clientY;
+      }, {passive:true});
+      document.addEventListener('touchend', function(e){
+        if (startY === null || layer.classList.contains('show')) return;
+        var endY = (e.changedTouches[0] || {}).clientY || startY;
+        if (startY - endY > 70) open();
+        startY = null;
+      }, {passive:true});
+      // Deslizar para baixo fecha o teclado
+      var sY2 = null;
+      layer.addEventListener('touchstart', function(e){ sY2 = e.touches[0].clientY; }, {passive:true});
+      layer.addEventListener('touchend', function(e){
+        if (sY2 === null) return;
+        var endY = (e.changedTouches[0] || {}).clientY || sY2;
+        if (endY - sY2 > 90) close();
+        sY2 = null;
+      }, {passive:true});
     })();
 
     // ===== Início =====
