@@ -26,16 +26,14 @@ public class LockService extends Service {
             @Override
             public void onReceive(Context context, Intent intent) {
                 String action = intent.getAction();
-                // Prepara ao APAGAR a tela (fica pronto por baixo) e reforca ao ACENDER
-                if (Intent.ACTION_SCREEN_OFF.equals(action)
-                        || Intent.ACTION_SCREEN_ON.equals(action)) {
+                // Mostra a tela SOMENTE quando o usuario acende o celular
+                if (Intent.ACTION_SCREEN_ON.equals(action)) {
                     showLock(context);
                 }
             }
         };
         IntentFilter filter = new IntentFilter();
         filter.addAction(Intent.ACTION_SCREEN_ON);
-        filter.addAction(Intent.ACTION_SCREEN_OFF);
         registerReceiver(screenReceiver, filter);
     }
 

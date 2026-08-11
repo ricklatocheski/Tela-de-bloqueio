@@ -328,13 +328,11 @@ public class MainActivity extends Activity {
     }
 
     private void showOverLockScreen() {
+        // Aparece POR CIMA do bloqueio, mas NAO liga a tela sozinho
         if (Build.VERSION.SDK_INT >= 27) {
             setShowWhenLocked(true);
-            setTurnScreenOn(true);
         } else {
-            getWindow().addFlags(
-                    WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
-                            | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
+            getWindow().addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED);
         }
     }
 
